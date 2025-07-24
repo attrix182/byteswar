@@ -23,6 +23,12 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000'
 const app = express()
 const httpServer = createServer(app)
 
+// Configurar para trabajar con proxies (Coolify, nginx, etc.)
+app.set('trust proxy', true)
+app.set('trust proxy', 'loopback')
+app.set('trust proxy', 'linklocal')
+app.set('trust proxy', 'uniquelocal')
+
 // Configuración de CORS
 const corsOptions = {
   origin: ENABLE_CORS ? CORS_ORIGINS : false,
