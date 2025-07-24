@@ -1,0 +1,21 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "wget"]
+
+[phases.install]
+cmds = ["npm ci --only=production"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node --import tsx/esm src/server/gameServer.ts"
+
+[variables]
+NODE_ENV = "production"
+PORT = "3001"
+HOST = "0.0.0.0"
+DEBUG = "false"
+LOG_LEVEL = "info"
+ENABLE_CORS = "true"
+CORS_ORIGINS = "*"
+ENABLE_CREDENTIALS = "false" 

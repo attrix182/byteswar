@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "server": "tsx src/server/gameServer.ts",
     "dev:server": "tsx watch src/server/gameServer.ts",
-    "start": "concurrently \"npm run dev:server\" \"npm run dev\"",
+    "start": "node --import tsx/esm src/server/gameServer.ts",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev\""
   },
   "keywords": [

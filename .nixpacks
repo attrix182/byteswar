@@ -1,0 +1,15 @@
+# Configuración de Nixpacks para BytesWar
+# Este archivo es opcional, la configuración principal está en nixpacks.toml
+
+# Configuración del servidor web
+[web]
+port = 3001
+internal_port = 3001
+
+# Health check
+[healthcheck]
+path = "/health"
+interval = 30
+timeout = 10
+retries = 3
+start_period = 40 
