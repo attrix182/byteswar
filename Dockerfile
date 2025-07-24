@@ -26,7 +26,7 @@ RUN npm run build
 FROM node:18-alpine AS production
 
 # Instalar dependencias mínimas
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S nodejs
@@ -58,4 +58,4 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 ENTRYPOINT ["dumb-init", "--"]
 
 # Comando de inicio
-CMD ["node", "server/gameServer.js"] 
+CMD ["node", "server/index.js"] 
