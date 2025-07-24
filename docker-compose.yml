@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  byteswar:
+    build: .
+    container_name: byteswar-game
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DEBUG=false
+      - LOG_LEVEL=info
+      - ENABLE_CORS=true
+      - CORS_ORIGINS=*
+      - ENABLE_CREDENTIALS=false
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - byteswar-network
+
+networks:
+  byteswar-network:
+    driver: bridge 

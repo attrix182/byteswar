@@ -44,6 +44,25 @@ const io = new Server(httpServer, {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+// Servir archivos estáticos del cliente construido
+app.use(express.static('dist'))
+
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    players: gameState.players.length,
+    projectiles: gameState.projectiles.length,
+    gameActive: gameState.isGameActive
+  })
+})
+
+// Ruta principal - servir el cliente
+app.get('/', (_req, res) => {
+  res.sendFile('dist/index.html', { root: '.' })
+})
+
 // Estado del juego
 let gameState: GameState = {
   players: [],
