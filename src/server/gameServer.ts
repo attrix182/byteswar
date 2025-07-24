@@ -203,7 +203,7 @@ function updateGameState(deltaTime: number) {
 // Loop del juego
 setInterval(() => {
   if (gameState.isGameActive) {
-    updateGameState(1/60) // 60 FPS
+    updateGameState(1/30) // 30 FPS consistente
     io.emit('gameState', gameState)
   }
 }, 1000 / 30) // 30 FPS para reducir sobrecarga de red

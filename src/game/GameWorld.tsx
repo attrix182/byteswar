@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/cannon'
 import { OrbitControls, Stats } from '@react-three/drei'
 import { Robot } from '../components/Robot'
@@ -9,8 +9,6 @@ import { DeathExplosion } from '../components/DeathExplosion'
 import { Arena } from '../components/Arena'
 import { InputManager } from './InputManager'
 import { PhysicsManager } from './PhysicsManager'
-import { InterpolationManager } from './InterpolationManager'
-import { LocalPrediction } from './LocalPrediction'
 import { Player, GameState, GameInput } from '../types/game'
 
 interface GameWorldProps {
@@ -31,8 +29,6 @@ const GameLogic: React.FC<GameWorldProps> = ({
 }) => {
   const inputManager = useRef<InputManager>()
   const physicsManager = useRef<PhysicsManager>()
-  const interpolationManager = useRef<InterpolationManager>()
-  const localPrediction = useRef<LocalPrediction>()
   const lastShootTime = useRef(0)
   const shootCooldown = 500 // 500ms entre disparos
   const [deathExplosions, setDeathExplosions] = useState<Array<{
@@ -43,23 +39,14 @@ const GameLogic: React.FC<GameWorldProps> = ({
   useEffect(() => {
     inputManager.current = new InputManager()
     physicsManager.current = new PhysicsManager()
-    interpolationManager.current = new InterpolationManager()
-    localPrediction.current = new LocalPrediction()
 
     return () => {
       inputManager.current?.destroy()
     }
   }, [])
 
-  // Actualizar estado interpolado cuando cambie el gameState
+  // Detectar muertes y crear explosiones
   useEffect(() => {
-    if (!interpolationManager.current || !localPrediction.current) return
-
-    // La interpolación se maneja directamente en el renderizado
-
-    // La interpolación se maneja directamente en el renderizado
-
-    // Detectar muertes y crear explosiones
     gameState.players.forEach(player => {
       if (player.isDead && player.deathTime) {
         // Verificar si ya existe una explosión para este jugador
@@ -73,12 +60,12 @@ const GameLogic: React.FC<GameWorldProps> = ({
         }
       }
     })
-  }, [gameState, localPlayerId, deathExplosions])
+  }, [gameState, deathExplosions])
 
-  // Mover la lógica de input fuera de useFrame
+  // Manejar input del jugador
   useEffect(() => {
     const handleInput = () => {
-      if (!inputManager.current || !physicsManager.current || !localPrediction.current) return
+      if (!inputManager.current || !physicsManager.current) return
 
       const localPlayer = gameState.players.find(p => p.id === localPlayerId)
 
@@ -90,21 +77,24 @@ const GameLogic: React.FC<GameWorldProps> = ({
         if (!localPlayer.isDead) {
           const input = inputManager.current.getInput()
           
-          // Enviar input al servidor
-          onInputUpdate(input)
+          // Debug: verificar si hay input de movimiento
+          if (input.forward || input.backward || input.left || input.right) {
+            console.log('🎮 Input de movimiento detectado:', input)
+          }
           
-          // Actualizar predicción local
-          const predictedPlayer = localPrediction.current.updateLocalPlayer(localPlayer, input)
-          onPlayerUpdate(predictedPlayer)
+          // Actualizar posición local para movimiento inmediato
+          const deltaTime = 1/60 // 60 FPS
+          const updatedPlayer = physicsManager.current.updatePlayer(localPlayer, input, deltaTime)
+          onPlayerUpdate(updatedPlayer)
 
-          // Manejar disparos - enviar directamente al servidor
+          // Enviar input al servidor (solo una vez)
+          onInputUpdate(input)
+
+          // Manejar disparos
           if (input.shoot && Date.now() - lastShootTime.current > shootCooldown) {
             console.log('🔫 Disparo detectado, enviando al servidor')
             onShoot()
             lastShootTime.current = Date.now()
-            
-            // Agregar efecto de disparo local
-            // Los efectos se manejan en el componente principal
           }
           
           // Reset del cooldown si no está disparando
@@ -112,7 +102,6 @@ const GameLogic: React.FC<GameWorldProps> = ({
             lastShootTime.current = 0
           }
         } else {
-          // Si está muerto, no enviar input al servidor
           console.log('💀 Jugador muerto, input bloqueado')
         }
       }
@@ -148,10 +137,6 @@ const Scene: React.FC<{
   onShootEffectComplete,
   onDeathExplosionComplete
 }) => {
-  // Interpolación en tiempo real
-  useFrame(() => {
-    // La interpolación se maneja en el GameLogic
-  })
   return (
     <>
       {/* Iluminación */}
@@ -178,8 +163,6 @@ const Scene: React.FC<{
             isLocal={player.id === localPlayerId}
           />
         ))}
-
-
 
         {/* Proyectiles */}
         {gameState.projectiles.map((projectile) => (

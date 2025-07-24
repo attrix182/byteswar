@@ -5,11 +5,11 @@ export const GAME_CONFIG: GameConfig = {
   arenaSize: 120,
   
   // Configuración del jugador
-  playerSpeed: 15,
+  playerSpeed: 10,
   playerHealth: 100,
   
   // Configuración de proyectiles
-  projectileSpeed: 12,
+  projectileSpeed: 15,
   projectileDamage: 10, // Aumentado para debug
   
   // Configuración de respawn

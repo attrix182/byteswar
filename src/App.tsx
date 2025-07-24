@@ -131,10 +131,15 @@ function App() {
     networkManager.joinGame(playerName)
   }
 
-  const handlePlayerUpdate = (_player: Player) => {
-    // Enviar input al servidor en lugar de solo actualizar localmente
-    const currentInput = lastInputRef.current
-    networkManager.sendInput(currentInput)
+  const handlePlayerUpdate = (player: Player) => {
+    // Actualizar el estado local del jugador para movimiento inmediato
+    setGameState(prevState => ({
+      ...prevState,
+      players: prevState.players.map(p => 
+        p.id === player.id ? player : p
+      )
+    }))
+    console.log('🔄 Actualizando posición local del jugador:', player.name, 'en', player.position)
   }
 
   const handleShoot = () => {
@@ -147,10 +152,19 @@ function App() {
 
   // Función para actualizar el input y enviarlo al servidor
   const updateInput = (input: GameInput) => {
-    lastInputRef.current = input
+    // Asegurar que todos los valores sean booleanos válidos
+    const sanitizedInput: GameInput = {
+      forward: Boolean(input.forward),
+      backward: Boolean(input.backward),
+      left: Boolean(input.left),
+      right: Boolean(input.right),
+      shoot: Boolean(input.shoot)
+    }
+    
+    lastInputRef.current = sanitizedInput
     if (isConnected && localPlayerId) {
-      console.log('Enviando input desde App:', input)
-      networkManager.sendInput(input)
+      console.log('Enviando input desde App:', sanitizedInput)
+      networkManager.sendInput(sanitizedInput)
     } else {
       console.log('No enviando input - no conectado:', { isConnected, localPlayerId: !!localPlayerId })
     }

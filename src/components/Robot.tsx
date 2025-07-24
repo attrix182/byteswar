@@ -20,15 +20,11 @@ export const Robot: React.FC<RobotProps> = ({ player }) => {
 
   const wheelRefs = useRef<THREE.Group[]>([])
 
-  // Actualizar posición cuando cambie el estado del jugador
+  // Actualizar posición directamente sin interpolación compleja
   useEffect(() => {
     if (api) {
-      // Usar posición interpolada si está disponible
-      const position = (player as any).interpolatedPosition || player.position
-      const rotation = (player as any).interpolatedRotation || player.rotation
-      
-      api.position.set(position[0], position[1], position[2])
-      api.rotation.set(rotation[0], rotation[1], rotation[2])
+      api.position.set(player.position[0], player.position[1], player.position[2])
+      api.rotation.set(player.rotation[0], player.rotation[1], player.rotation[2])
     }
   }, [player.position, player.rotation, api])
 
