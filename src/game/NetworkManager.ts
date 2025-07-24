@@ -1,0 +1,81 @@
+import { io, Socket } from 'socket.io-client'
+import { GameState, Player, GameInput } from '../types/game'
+
+export class NetworkManager {
+  private socket: Socket | null = null
+  private serverUrl: string
+  private onGameStateUpdate: ((gameState: GameState) => void) | null = null
+  private onPlayerJoined: ((player: Player) => void) | null = null
+
+  constructor(serverUrl: string = 'http://localhost:3001') {
+    this.serverUrl = serverUrl
+  }
+
+  public connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.socket = io(this.serverUrl)
+
+      this.socket.on('connect', () => {
+        console.log('Conectado al servidor de BytesWar')
+        resolve()
+      })
+
+      this.socket.on('connect_error', (error) => {
+        console.error('Error al conectar:', error)
+        reject(error)
+      })
+
+      this.socket.on('gameState', (gameState: GameState) => {
+        if (this.onGameStateUpdate) {
+          this.onGameStateUpdate(gameState)
+        }
+      })
+
+      this.socket.on('playerJoined', (player: Player) => {
+        if (this.onPlayerJoined) {
+          this.onPlayerJoined(player)
+        }
+      })
+    })
+  }
+
+  public joinGame(playerName: string): void {
+    if (this.socket) {
+      this.socket.emit('joinGame', playerName)
+    }
+  }
+
+  public sendInput(input: GameInput): void {
+    if (this.socket) {
+      console.log('Enviando input al servidor:', input)
+      this.socket.emit('playerInput', input)
+    } else {
+      console.log('ERROR: Socket no está conectado')
+    }
+  }
+
+  public shoot(): void {
+    if (this.socket) {
+      this.socket.emit('shoot')
+    }
+  }
+
+  public disconnect(): void {
+    if (this.socket) {
+      this.socket.disconnect()
+      this.socket = null
+    }
+  }
+
+  public onGameState(callback: (gameState: GameState) => void): void {
+    this.onGameStateUpdate = callback
+  }
+
+  public onPlayerJoin(callback: (player: Player) => void): void {
+    this.onPlayerJoined = callback
+  }
+
+  public getSocketId(): string | null {
+    return this.socket?.id || null
+  }
+} 
