@@ -8,7 +8,6 @@ import { Arena } from '../components/Arena'
 import { InputManager } from './InputManager'
 import { PhysicsManager } from './PhysicsManager'
 import { Player, GameState, GameInput } from '../types/game'
-import { GAME_CONFIG, PLAYER_COLORS } from '../utils/gameConfig'
 
 interface GameWorldProps {
   localPlayerId: string

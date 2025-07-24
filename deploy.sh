@@ -33,15 +33,16 @@ docker-compose up -d
 
 # Esperar a que el servicio esté listo
 echo "⏳ Esperando a que el servicio esté listo..."
-sleep 10
+sleep 15
 
 # Verificar estado
 echo "🔍 Verificando estado del servicio..."
-if curl -f http://localhost:3001/api/status > /dev/null 2>&1; then
+if wget --no-verbose --tries=1 --spider http://localhost:3001/health 2>/dev/null; then
     echo "✅ BytesWar está funcionando correctamente!"
     echo "🌐 Accede al juego en: http://tu-vps-ip:3001"
     echo "📊 Estado del servicio:"
-    curl -s http://localhost:3001/api/status | jq .
+    wget -qO- http://localhost:3001/api/status
+    echo ""
 else
     echo "❌ Error: El servicio no está respondiendo"
     echo "📋 Logs del contenedor:"
