@@ -3,16 +3,29 @@ version: '3.8'
 services:
   byteswar:
     build: .
-    container_name: byteswar-game
+    container_name: ${DOCKER_CONTAINER_NAME:-byteswar-game}
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:3001"
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - SERVER_URL=http://byteswar.31.97.151.147.sslip.io
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3001}
+      - SERVER_URL=${SERVER_URL:-http://byteswar.31.97.151.147.sslip.io}
+      - CLIENT_URL=${CLIENT_URL:-http://byteswar.31.97.151.147.sslip.io}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://byteswar.31.97.151.147.sslip.io,https://byteswar.31.97.151.147.sslip.io,http://localhost:3000,http://localhost:3001}
+      - MAX_PLAYERS=${MAX_PLAYERS:-8}
+      - GAME_TICK_RATE=${GAME_TICK_RATE:-60}
+      - ARENA_SIZE=${ARENA_SIZE:-50}
+      - PLAYER_SPEED=${PLAYER_SPEED:-5}
+      - PROJECTILE_SPEED=${PROJECTILE_SPEED:-20}
+      - PROJECTILE_DAMAGE=${PROJECTILE_DAMAGE:-25}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - SHOW_STATS=${SHOW_STATS:-false}
+      - ENABLE_CORS=${ENABLE_CORS:-true}
+      - ENABLE_CREDENTIALS=${ENABLE_CREDENTIALS:-true}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001${HEALTH_CHECK_ENDPOINT:-/health}"]
       interval: 30s
       timeout: 10s
       retries: 3
