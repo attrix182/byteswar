@@ -41,14 +41,6 @@ app.use(express.json());
 // Crear instancia del servidor de juego
 const gameServer = new GameServer(io);
 
-// Servir archivos estáticos desde la carpeta dist
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// Ruta para servir index.html en cualquier ruta (SPA) - debe ir al final
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
-
 // Función para logging
 function log(level, message, data) {
   const timestamp = new Date().toISOString();
@@ -67,7 +59,7 @@ function log(level, message, data) {
   }
 }
 
-// Rutas API
+// Rutas API - deben ir ANTES de la ruta catch-all
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
@@ -101,6 +93,14 @@ app.get('/info', (req, res) => {
     maxPlayers: 8,
     environment: NODE_ENV
   });
+});
+
+// Servir archivos estáticos desde la carpeta dist
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Ruta para servir index.html en cualquier ruta (SPA) - debe ir al final
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Manejo de conexiones WebSocket
