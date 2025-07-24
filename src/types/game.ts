@@ -7,6 +7,8 @@ export interface Player {
   maxHealth: number
   color: string
   isLocal: boolean
+  isDead?: boolean
+  deathTime?: number
 }
 
 export interface Projectile {
@@ -40,4 +42,6 @@ export interface GameConfig {
   projectileDamage: number
   playerHealth: number
   respawnTime: number
+  maxPlayers: number
+  gameTickRate: number
 } 

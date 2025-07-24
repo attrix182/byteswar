@@ -1,12 +1,23 @@
 import { GameConfig } from '../types/game'
 
 export const GAME_CONFIG: GameConfig = {
-  arenaSize: 50,
-  playerSpeed: 5,
-  projectileSpeed: 15,
-  projectileDamage: 25,
+  // Tamaño de la arena
+  arenaSize: 120,
+  
+  // Configuración del jugador
+  playerSpeed: 15,
   playerHealth: 100,
-  respawnTime: 3000
+  
+  // Configuración de proyectiles
+  projectileSpeed: 12,
+  projectileDamage: 10, // Aumentado para debug
+  
+  // Configuración de respawn
+  respawnTime: 5000, // 5 segundos
+  
+  // Configuración adicional
+  maxPlayers: 8,
+  gameTickRate: 60
 }
 
 export const PLAYER_COLORS = [

@@ -1,18 +1,14 @@
+import { GAME_CONFIG } from '../utils/gameConfig'
+
 // Configuración de entorno
 export const ENV_CONFIG = {
   // URL del servidor según el entorno
   SERVER_URL: import.meta.env.PROD
     ? 'http://byteswar.31.97.151.147.sslip.io'
-    : 'http://localhost:3001',
+    : window.location.origin, // Usar el proxy de Vite en desarrollo
   
-  // Configuración del juego
-  GAME_CONFIG: {
-    playerSpeed: 5,
-    projectileSpeed: 20,
-    projectileDamage: 25,
-    arenaSize: 50,
-    maxPlayers: 8
-  },
+  // Configuración del juego (usar la configuración unificada)
+  GAME_CONFIG,
   
   // Configuración de desarrollo
   DEV: {

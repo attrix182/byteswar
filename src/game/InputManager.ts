@@ -10,6 +10,7 @@ export class InputManager {
   }
 
   private keys: { [key: string]: boolean } = {}
+  private isBlocked: boolean = false
 
   // Propiedades para almacenar las referencias de los event listeners
   private handleKeyDown: ((event: KeyboardEvent) => void) | null = null
@@ -22,17 +23,10 @@ export class InputManager {
   }
 
   private setupEventListeners() {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      this.keys[event.code] = true
-      this.updateInput()
-    }
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      this.keys[event.code] = false
-      this.updateInput()
-    }
+    // Los event listeners se configuran más abajo
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (this.isBlocked) return // Bloquear input si está muerto
       if (event.button === 0) { // Botón izquierdo
         console.log('🖱️ Click izquierdo detectado - DISPARO!')
         this.input.shoot = true
@@ -40,20 +34,48 @@ export class InputManager {
     }
 
     const handleMouseUp = (event: MouseEvent) => {
+      if (this.isBlocked) return // Bloquear input si está muerto
       if (event.button === 0) {
         console.log('🖱️ Click izquierdo liberado')
         this.input.shoot = false
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('keyup', handleKeyUp)
+    // Agregar disparo con barra espaciadora
+    const handleKeyDownWithShoot = (event: KeyboardEvent) => {
+      if (this.isBlocked) return // Bloquear input si está muerto
+      this.keys[event.code] = true
+      
+      // Disparo con barra espaciadora
+      if (event.code === 'Space') {
+        this.input.shoot = true
+        console.log('🔫 Disparo con barra espaciadora!')
+      }
+      
+      this.updateInput()
+    }
+
+    const handleKeyUpWithShoot = (event: KeyboardEvent) => {
+      if (this.isBlocked) return // Bloquear input si está muerto
+      this.keys[event.code] = false
+      
+      // Liberar disparo con barra espaciadora
+      if (event.code === 'Space') {
+        this.input.shoot = false
+        console.log('🔫 Disparo liberado')
+      }
+      
+      this.updateInput()
+    }
+
+    document.addEventListener('keydown', handleKeyDownWithShoot)
+    document.addEventListener('keyup', handleKeyUpWithShoot)
     document.addEventListener('mousedown', handleMouseDown)
     document.addEventListener('mouseup', handleMouseUp)
 
     // Guardar las referencias para poder remover los event listeners
-    this.handleKeyDown = handleKeyDown
-    this.handleKeyUp = handleKeyUp
+    this.handleKeyDown = handleKeyDownWithShoot
+    this.handleKeyUp = handleKeyUpWithShoot
     this.handleMouseDown = handleMouseDown
     this.handleMouseUp = handleMouseUp
   }
@@ -83,7 +105,32 @@ export class InputManager {
   }
 
   public getInput(): GameInput {
+    // Si está bloqueado, devolver input vacío
+    if (this.isBlocked) {
+      return {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        shoot: false
+      }
+    }
     return { ...this.input }
+  }
+
+  public setBlocked(blocked: boolean): void {
+    this.isBlocked = blocked
+    if (blocked) {
+      // Resetear input cuando se bloquea
+      this.input = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        shoot: false
+      }
+      this.keys = {}
+    }
   }
 
   public destroy() {

@@ -9,7 +9,7 @@ interface RobotProps {
   isLocal: boolean
 }
 
-export const Robot: React.FC<RobotProps> = ({ player, isLocal }) => {
+export const Robot: React.FC<RobotProps> = ({ player }) => {
   const [ref, api] = useBox(() => ({
     mass: 1,
     position: player.position,
@@ -23,9 +23,12 @@ export const Robot: React.FC<RobotProps> = ({ player, isLocal }) => {
   // Actualizar posición cuando cambie el estado del jugador
   useEffect(() => {
     if (api) {
-      console.log('🤖 Actualizando posición del robot:', player.name, player.position)
-      api.position.set(player.position[0], player.position[1], player.position[2])
-      api.rotation.set(player.rotation[0], player.rotation[1], player.rotation[2])
+      // Usar posición interpolada si está disponible
+      const position = (player as any).interpolatedPosition || player.position
+      const rotation = (player as any).interpolatedRotation || player.rotation
+      
+      api.position.set(position[0], position[1], position[2])
+      api.rotation.set(rotation[0], rotation[1], rotation[2])
     }
   }, [player.position, player.rotation, api])
 
@@ -97,16 +100,6 @@ export const Robot: React.FC<RobotProps> = ({ player, isLocal }) => {
         <boxGeometry args={[0.8, 0.1, 0.1]} />
         <meshStandardMaterial color={player.health > 50 ? "#44ff44" : player.health > 25 ? "#ffff44" : "#ff4444"} />
       </mesh>
-
-      {/* Nombre del jugador */}
-      {!isLocal && (
-        <group position={[0, 1.5, 0]}>
-          <mesh>
-            <planeGeometry args={[2, 0.5]} />
-            <meshBasicMaterial color="#000" transparent opacity={0.7} />
-          </mesh>
-        </group>
-      )}
     </group>
   )
 } 

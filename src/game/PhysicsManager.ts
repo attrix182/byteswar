@@ -9,7 +9,6 @@ export class PhysicsManager {
   }
 
   public updatePlayer(player: Player, input: GameInput, deltaTime: number): Player {
-    const speed = this.config.playerSpeed * deltaTime
     const [x, y, z] = player.position
     const [rotX, rotY, rotZ] = player.rotation
 
@@ -17,22 +16,24 @@ export class PhysicsManager {
     let newZ = z
     let newRotY = rotY
 
-    // Rotación
+    // Rotación más suave
+    const rotationSpeed = 3.0 // radianes por segundo
     if (input.left) {
-      newRotY += speed * 2
+      newRotY += rotationSpeed * deltaTime
     }
     if (input.right) {
-      newRotY -= speed * 2
+      newRotY -= rotationSpeed * deltaTime
     }
 
-    // Movimiento
+    // Movimiento más suave con aceleración
+    const moveSpeed = 4.0 // unidades por segundo
     if (input.forward) {
-      newX += Math.sin(newRotY) * speed
-      newZ += Math.cos(newRotY) * speed
+      newX += Math.sin(newRotY) * moveSpeed * deltaTime
+      newZ += Math.cos(newRotY) * moveSpeed * deltaTime
     }
     if (input.backward) {
-      newX -= Math.sin(newRotY) * speed
-      newZ -= Math.cos(newRotY) * speed
+      newX -= Math.sin(newRotY) * moveSpeed * deltaTime
+      newZ -= Math.cos(newRotY) * moveSpeed * deltaTime
     }
 
     // Limitar posición dentro de la arena
@@ -51,19 +52,25 @@ export class PhysicsManager {
     const [x, y, z] = projectile.position
     const [vx, vy, vz] = projectile.velocity
 
+    // Aplicar velocidad
     const newX = x + vx * deltaTime
     const newY = y + vy * deltaTime
     const newZ = z + vz * deltaTime
 
+    // Aplicar gravedad ligera
+    const gravity = -2.0 // Gravedad reducida para proyectiles
+    const newVy = vy + gravity * deltaTime
+
     // Verificar límites de la arena
     const halfArena = this.config.arenaSize / 2
-    if (Math.abs(newX) > halfArena || Math.abs(newZ) > halfArena || newY > 10 || newY < -5) {
+    if (Math.abs(newX) > halfArena || Math.abs(newZ) > halfArena || newY > 15 || newY < -10) {
       return { ...projectile, lifetime: 0 }
     }
 
     return {
       ...projectile,
       position: [newX, newY, newZ],
+      velocity: [vx, newVy, vz],
       lifetime: projectile.lifetime - deltaTime
     }
   }
@@ -78,7 +85,16 @@ export class PhysicsManager {
       Math.pow(pz - projz, 2)
     )
 
-    return distance < 0.8 // Radio de colisión del robot
+    const isColliding = distance < 2.0 // Radio de colisión aumentado para debug
+    
+    // Debug: log colisiones
+    if (isColliding) {
+      console.log(`🎯 Colisión detectada: ${player.name} <-> proyectil ${projectile.id}`)
+      console.log(`📏 Distancia: ${distance.toFixed(2)} (límite: 0.8)`)
+      console.log(`📍 Posiciones: jugador [${px.toFixed(2)}, ${py.toFixed(2)}, ${pz.toFixed(2)}] | proyectil [${projx.toFixed(2)}, ${projy.toFixed(2)}, ${projz.toFixed(2)}]`)
+    }
+
+    return isColliding
   }
 
   public createProjectile(
@@ -93,18 +109,25 @@ export class PhysicsManager {
     const projectileZ = z + Math.cos(rotY) * 1.2
     const projectileY = y + 0.5
 
-    // Velocidad del proyectil
+    // Velocidad del proyectil con dirección hacia adelante
     const speed = this.config.projectileSpeed
-    const velocityX = Math.sin(rotY) * speed
-    const velocityZ = Math.cos(rotY) * speed
+    const velocityY = 0.5 // Pequeño impulso hacia arriba
+
+    // Agregar un poco de aleatoriedad para hacer el disparo más interesante
+    const spread = 0.1 // Spread de 0.1 radianes
+    const randomSpread = (Math.random() - 0.5) * spread
+    const finalRotY = rotY + randomSpread
+
+    const finalVelocityX = Math.sin(finalRotY) * speed
+    const finalVelocityZ = Math.cos(finalRotY) * speed
 
     return {
       id: Math.random().toString(36).substr(2, 9),
       position: [projectileX, projectileY, projectileZ],
-      velocity: [velocityX, 0, velocityZ],
+      velocity: [finalVelocityX, velocityY, finalVelocityZ],
       ownerId: player.id,
       damage: this.config.projectileDamage,
-      lifetime: 5.0 // 5 segundos de vida
+      lifetime: 8.0 // 8 segundos de vida para proyectiles más duraderos
     }
   }
 } 

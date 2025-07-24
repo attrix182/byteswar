@@ -2,9 +2,13 @@ import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import cors from 'cors'
+import { config } from 'dotenv'
 import { GameState, Player, GameInput } from '../types/game'
 import { GAME_CONFIG, PLAYER_COLORS } from '../utils/gameConfig'
 import { PhysicsManager } from '../game/PhysicsManager'
+
+// Cargar variables de entorno
+config()
 
 // Configuración desde variables de entorno
 const PORT = process.env.PORT || 3001
@@ -25,11 +29,16 @@ const corsOptions = {
   origin: ENABLE_CORS ? CORS_ORIGINS : false,
   credentials: process.env.ENABLE_CREDENTIALS === 'true',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }
 
 const io = new Server(httpServer, {
-  cors: corsOptions
+  cors: {
+    origin: ENABLE_CORS ? CORS_ORIGINS : false,
+    credentials: process.env.ENABLE_CREDENTIALS === 'true',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  },
+  transports: ['polling', 'websocket']
 })
 
 app.use(cors(corsOptions))
@@ -82,7 +91,9 @@ function createPlayer(id: string, name: string): Player {
     health: GAME_CONFIG.playerHealth,
     maxHealth: GAME_CONFIG.playerHealth,
     color: PLAYER_COLORS[colorIndex],
-    isLocal: false
+    isLocal: false,
+    isDead: false,
+    deathTime: undefined
   }
 }
 
@@ -90,22 +101,12 @@ function createPlayer(id: string, name: string): Player {
 function updateGameState(deltaTime: number) {
   // Actualizar posiciones de jugadores basadas en su input
   connectedPlayers.forEach((playerData, playerId) => {
-    if (gameState.isGameActive) {
+    if (gameState.isGameActive && !playerData.player.isDead) {
       const updatedPlayer = physicsManager.updatePlayer(
         playerData.player, 
         playerData.lastInput, 
         deltaTime
       )
-      
-      // Debug: solo log si hay movimiento
-      if (playerData.lastInput.forward || playerData.lastInput.backward || 
-          playerData.lastInput.left || playerData.lastInput.right) {
-        console.log(`Actualizando ${playerData.player.name}:`, {
-          oldPos: playerData.player.position,
-          newPos: updatedPlayer.position,
-          input: playerData.lastInput
-        })
-      }
       
       playerData.player = updatedPlayer
       
@@ -119,7 +120,16 @@ function updateGameState(deltaTime: number) {
 
   // Actualizar proyectiles
   gameState.projectiles = gameState.projectiles
-    .map(projectile => physicsManager.updateProjectile(projectile, deltaTime))
+    .map(projectile => {
+      const updatedProjectile = physicsManager.updateProjectile(projectile, deltaTime)
+      
+      // Debug: log cuando un proyectil se destruye
+      if (updatedProjectile.lifetime <= 0 && projectile.lifetime > 0) {
+        console.log(`💥 Proyectil ${projectile.id} destruido por tiempo/límites`)
+      }
+      
+      return updatedProjectile
+    })
     .filter(projectile => projectile.lifetime > 0)
 
   // Verificar colisiones
@@ -130,19 +140,55 @@ function updateGameState(deltaTime: number) {
     )
 
     if (hitPlayer) {
-      // Aplicar daño
-      hitPlayer.health = Math.max(0, hitPlayer.health - projectile.damage)
+      console.log(`💥 Colisión detectada: ${hitPlayer.name} recibió daño de ${projectile.damage}`)
       
-      // Si el jugador murió, respawnear después de un tiempo
+      // Aplicar daño
+      const oldHealth = hitPlayer.health
+      hitPlayer.health = Math.max(0, hitPlayer.health - projectile.damage)
+      console.log(`💔 ${hitPlayer.name}: ${oldHealth} -> ${hitPlayer.health} HP`)
+      
+      // Si el jugador murió, programar respawn
       if (hitPlayer.health <= 0) {
+        console.log(`💀 ${hitPlayer.name} ha sido eliminado!`)
+        
+        // Marcar como muerto
+        hitPlayer.isDead = true
+        hitPlayer.deathTime = Date.now()
+        
+        console.log(`📤 Enviando estado de muerte para ${hitPlayer.name}:`, {
+          id: hitPlayer.id,
+          isDead: hitPlayer.isDead,
+          deathTime: hitPlayer.deathTime
+        })
+        
+        // Enviar estado actualizado inmediatamente para mostrar la pantalla de muerte
+        io.emit('gameState', gameState)
+        
+        // Programar respawn automático después de 5 segundos
         setTimeout(() => {
-          hitPlayer.health = GAME_CONFIG.playerHealth
-          hitPlayer.position = [
-            (Math.random() - 0.5) * 20,
-            0.5,
-            (Math.random() - 0.5) * 20
-          ]
-        }, GAME_CONFIG.respawnTime)
+          if (hitPlayer.health <= 0) { // Solo respawnear si aún está muerto
+            console.log(`🔄 Respawn automático para ${hitPlayer.name}`)
+            hitPlayer.health = GAME_CONFIG.playerHealth
+            hitPlayer.isDead = false
+            hitPlayer.deathTime = undefined
+            
+            // Posición de respawn aleatoria
+            hitPlayer.position = [
+              (Math.random() - 0.5) * 20,
+              0.5,
+              (Math.random() - 0.5) * 20
+            ]
+            
+            console.log(`📤 Enviando estado de respawn para ${hitPlayer.name}:`, {
+              id: hitPlayer.id,
+              isDead: hitPlayer.isDead,
+              health: hitPlayer.health
+            })
+            
+            // Enviar estado actualizado
+            io.emit('gameState', gameState)
+          }
+        }, 5000) // 5 segundos
       }
       
       return false // Eliminar proyectil
@@ -160,7 +206,7 @@ setInterval(() => {
     updateGameState(1/60) // 60 FPS
     io.emit('gameState', gameState)
   }
-}, 1000 / 60)
+}, 1000 / 30) // 30 FPS para reducir sobrecarga de red
 
 // Manejo de conexiones Socket.IO
 io.on('connection', (socket) => {
@@ -188,6 +234,7 @@ io.on('connection', (socket) => {
       gameState.isGameActive = true
     }
     
+    console.log(`📤 Enviando playerJoined a ${socket.id}:`, player)
     socket.emit('playerJoined', player)
     io.emit('gameState', gameState)
     
@@ -196,63 +243,73 @@ io.on('connection', (socket) => {
 
   // Actualizar input del jugador
   socket.on('playerInput', (input: GameInput) => {
-    console.log(`Socket ${socket.id} envió input:`, input)
     const playerData = connectedPlayers.get(socket.id)
     if (playerData) {
-      playerData.lastInput = input
-      console.log(`Input guardado para ${playerData.player.name}:`, input)
-      
-      // MOVIMIENTO INMEDIATO Y SIMPLE
-      if (input.forward) {
-        playerData.player.position[2] -= 0.1 // Mover hacia adelante (más suave)
-        console.log(`MOVIMIENTO: ${playerData.player.name} se movió hacia adelante`)
-      }
-      if (input.backward) {
-        playerData.player.position[2] += 0.1 // Mover hacia atrás (más suave)
-        console.log(`MOVIMIENTO: ${playerData.player.name} se movió hacia atrás`)
-      }
-      if (input.left) {
-        playerData.player.position[0] -= 0.1 // Mover hacia la izquierda (más suave)
-        console.log(`MOVIMIENTO: ${playerData.player.name} se movió hacia la izquierda`)
-      }
-      if (input.right) {
-        playerData.player.position[0] += 0.1 // Mover hacia la derecha (más suave)
-        console.log(`MOVIMIENTO: ${playerData.player.name} se movió hacia la derecha`)
-      }
-      
-      // Actualizar en el estado del juego inmediatamente
-      const gamePlayerIndex = gameState.players.findIndex(p => p.id === socket.id)
-      if (gamePlayerIndex !== -1) {
-        gameState.players[gamePlayerIndex] = playerData.player
-        console.log(`Estado actualizado para ${playerData.player.name}:`, playerData.player.position)
-        
-        // ENVIAR EL ESTADO ACTUALIZADO INMEDIATAMENTE
-        io.emit('gameState', gameState)
-        console.log(`Estado enviado a todos los clientes`)
+      // Solo procesar input si el jugador no está muerto
+      if (!playerData.player.isDead) {
+        playerData.lastInput = input
+      } else {
+        // Si está muerto, resetear el input
+        playerData.lastInput = {
+          forward: false,
+          backward: false,
+          left: false,
+          right: false,
+          shoot: false
+        }
       }
     } else {
       console.log('ERROR: No se encontró playerData para socket:', socket.id)
-      console.log('Jugadores conectados:', Array.from(connectedPlayers.keys()))
     }
   })
 
   // Disparar proyectil
   socket.on('shoot', () => {
-    console.log(`🔫 Disparo recibido de ${socket.id}`)
     const playerData = connectedPlayers.get(socket.id)
-    if (playerData && gameState.isGameActive) {
+    if (playerData && gameState.isGameActive && !playerData.player.isDead) {
       console.log(`💥 Creando proyectil para ${playerData.player.name}`)
       const projectile = physicsManager.createProjectile(playerData.player, [0, 0, 1])
       gameState.projectiles.push(projectile)
-      console.log(`🚀 Proyectil creado, total: ${gameState.projectiles.length}`)
       
-      // Enviar estado actualizado con el nuevo proyectil
+      // Enviar estado actualizado inmediatamente con el nuevo proyectil
       io.emit('gameState', gameState)
+      
+      // Log para debug
+      console.log(`🚀 Proyectil creado:`, {
+        id: projectile.id,
+        position: projectile.position,
+        velocity: projectile.velocity,
+        total: gameState.projectiles.length
+      })
     } else {
       console.log('❌ No se pudo crear proyectil:', { 
         playerData: !!playerData, 
-        isGameActive: gameState.isGameActive 
+        isGameActive: gameState.isGameActive,
+        isDead: playerData?.player.isDead
       })
+    }
+  })
+
+  // Respawn manual
+  socket.on('respawn', () => {
+    const playerData = connectedPlayers.get(socket.id)
+    if (playerData && playerData.player.isDead) {
+      console.log(`🔄 Respawn manual para ${playerData.player.name}`)
+      
+      // Respawnear al jugador
+      playerData.player.health = GAME_CONFIG.playerHealth
+      playerData.player.isDead = false
+      playerData.player.deathTime = undefined
+      
+      // Posición de respawn aleatoria
+      playerData.player.position = [
+        (Math.random() - 0.5) * 20,
+        0.5,
+        (Math.random() - 0.5) * 20
+      ]
+      
+      // Enviar estado actualizado
+      io.emit('gameState', gameState)
     }
   })
 
