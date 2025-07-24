@@ -43,6 +43,9 @@ RUN npm ci --only=production && npm cache clean --force
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/server ./server
 
+# Verificar que los archivos se copiaron correctamente
+RUN ls -la /app/server/
+
 # Cambiar al usuario no-root
 USER nodejs
 

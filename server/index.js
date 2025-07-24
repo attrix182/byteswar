@@ -6,6 +6,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GameServer } from './GameServer.js';
 
+// Debug: verificar archivos disponibles
+import fs from 'fs';
+import path from 'path';
+console.log('Archivos en /app/server:', fs.readdirSync('/app/server').join(', '));
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
