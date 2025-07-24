@@ -39,7 +39,7 @@ sleep 15
 echo "🔍 Verificando estado del servicio..."
 if wget --no-verbose --tries=1 --spider http://localhost:3001/health 2>/dev/null; then
     echo "✅ BytesWar está funcionando correctamente!"
-    echo "🌐 Accede al juego en: http://tu-vps-ip:3001"
+    echo "🌐 Accede al juego en: http://byteswar.31.97.151.147.sslip.io"
     echo "📊 Estado del servicio:"
     wget -qO- http://localhost:3001/api/status
     echo ""

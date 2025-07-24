@@ -15,7 +15,10 @@ const app = express()
 const httpServer = createServer(app)
 
 // Configurar CORS
-app.use(cors())
+app.use(cors({
+  origin: ["http://byteswar.31.97.151.147.sslip.io", "https://byteswar.31.97.151.147.sslip.io", "http://localhost:3000", "http://localhost:3001"],
+  credentials: true
+}))
 
 // Servir archivos estáticos del build
 app.use(express.static(path.join(__dirname, '../dist')))

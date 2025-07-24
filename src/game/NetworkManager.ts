@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client'
 import { GameState, Player, GameInput } from '../types/game'
+import { ENV_CONFIG } from '../config/environment'
 
 export class NetworkManager {
   private socket: Socket | null = null
@@ -7,8 +8,9 @@ export class NetworkManager {
   private onGameStateUpdate: ((gameState: GameState) => void) | null = null
   private onPlayerJoined: ((player: Player) => void) | null = null
 
-  constructor(serverUrl: string = 'http://localhost:3001') {
-    this.serverUrl = serverUrl
+  constructor(serverUrl?: string) {
+    // Usar la URL de la configuración de entorno por defecto, o la proporcionada
+    this.serverUrl = serverUrl || ENV_CONFIG.SERVER_URL
   }
 
   public connect(): Promise<void> {

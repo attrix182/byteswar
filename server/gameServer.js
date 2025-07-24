@@ -85,8 +85,9 @@ const app = express()
 const httpServer = createServer(app)
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: ["http://byteswar.31.97.151.147.sslip.io", "https://byteswar.31.97.151.147.sslip.io", "http://localhost:3000", "http://localhost:3001"],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 })
 

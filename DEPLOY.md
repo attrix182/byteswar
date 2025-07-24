@@ -190,7 +190,8 @@ environment:
 
 ## 🎮 Acceso al Juego
 
-Una vez desplegado, accede al juego en:
+Una vez desplegado, el juego estará disponible en:
+- **Producción**: http://byteswar.31.97.151.147.sslip.io
 - **Local**: http://localhost:3001
 - **VPS**: http://tu-vps-ip:3001
 - **Dominio**: http://tu-dominio.com (si configuraste Nginx)
