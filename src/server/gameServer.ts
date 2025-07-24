@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001
 const HOST = process.env.HOST || '0.0.0.0'
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const DEBUG = process.env.DEBUG === 'true'
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info'
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info' // Nivel de logging configurable
 const ENABLE_CORS = process.env.ENABLE_CORS !== 'false'
 const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',') || ['*']
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000'
@@ -51,7 +51,15 @@ function log(level: string, message: string, data?: any) {
   const timestamp = new Date().toISOString()
   const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`
   
-  if (level === 'error' || level === 'warn' || DEBUG) {
+  // Determinar si debemos mostrar el log basado en LOG_LEVEL
+  const shouldLog = 
+    level === 'error' || 
+    level === 'warn' || 
+    (LOG_LEVEL === 'debug' && level === 'debug') ||
+    (LOG_LEVEL === 'info' && (level === 'info' || level === 'warn' || level === 'error')) ||
+    DEBUG
+  
+  if (shouldLog) {
     console.log(logMessage, data || '')
   }
 }

@@ -16,6 +16,9 @@ RUN npm ci
 # Copiar código fuente
 COPY . .
 
+# Forzar rebuild (romper caché)
+RUN echo "Build timestamp: $(date)" > /tmp/build-timestamp
+
 # Construir la aplicación
 RUN npm run build
 
@@ -38,7 +41,7 @@ RUN npm ci --only=production && npm cache clean --force
 
 # Copiar código construido y servidor
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/server ./server
+COPY --from=builder --chown=nodejs:nodejs /app/src/server ./server
 
 # Cambiar al usuario no-root
 USER nodejs
@@ -55,4 +58,4 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 ENTRYPOINT ["dumb-init", "--"]
 
 # Comando de inicio
-CMD ["node", "server/index.js"] 
+CMD ["node", "server/gameServer.js"] 
