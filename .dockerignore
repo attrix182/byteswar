@@ -1,0 +1,43 @@
+# Dependencias
+node_modules
+npm-debug.log*
+
+# Archivos de desarrollo
+.git
+.gitignore
+README.md
+*.md
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+
+# Archivos de build temporales
+.tmp
+
+# Archivos de IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de testing
+coverage
+.nyc_output
+
+# Archivos de cache
+.cache
+.parcel-cache
+
+# Archivos de Nixpacks (no necesarios para Docker)
+nixpacks.toml
+.nixpacks
+.nixpacksignore 
