@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && tsc -p tsconfig.server.json",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "server": "tsx src/server/gameServer.ts",
     "dev:server": "tsx watch src/server/gameServer.ts",

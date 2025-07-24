@@ -41,7 +41,7 @@ RUN npm ci --only=production && npm cache clean --force
 
 # Copiar código construido y servidor
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/src/server ./server
+COPY --from=builder --chown=nodejs:nodejs /app/server ./server
 
 # Cambiar al usuario no-root
 USER nodejs
