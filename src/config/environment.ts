@@ -1,7 +1,7 @@
 // Configuración de entorno
 export const ENV_CONFIG = {
   // URL del servidor según el entorno
-  SERVER_URL: import.meta.env.PROD 
+  SERVER_URL: import.meta.env.PROD
     ? 'http://byteswar.31.97.151.147.sslip.io'
     : 'http://localhost:3001',
   
@@ -16,8 +16,8 @@ export const ENV_CONFIG = {
   
   // Configuración de desarrollo
   DEV: {
-    debug: !import.meta.env.PROD,
-    showStats: !import.meta.env.PROD,
+    debug: import.meta.env.DEV,
+    showStats: import.meta.env.DEV,
     logLevel: import.meta.env.PROD ? 'error' : 'debug'
   }
 }

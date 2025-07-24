@@ -37,7 +37,13 @@ git clone <tu-repositorio>
 cd byteswar
 ```
 
-### 2. Ejecutar el script de despliegue
+### 2. Generar archivo de configuración
+```bash
+chmod +x generate-env.sh
+./generate-env.sh
+```
+
+### 3. Ejecutar el script de despliegue
 ```bash
 chmod +x deploy.sh
 ./deploy.sh

@@ -33,6 +33,11 @@ Para actualizar el juego en producción:
 # En tu VPS
 cd byteswar
 git pull
+
+# Generar archivo de configuración (si no existe)
+./generate-env.sh
+
+# Desplegar
 ./deploy.sh
 ```
 
