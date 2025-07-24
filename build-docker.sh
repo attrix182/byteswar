@@ -23,6 +23,10 @@ if [ $? -eq 0 ]; then
         -e NODE_ENV=production \
         -e PORT=3001 \
         -e HOST=0.0.0.0 \
+        --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3001/health" \
+        --health-interval=30s \
+        --health-timeout=10s \
+        --health-retries=3 \
         byteswar:latest
     
     if [ $? -eq 0 ]; then

@@ -19,7 +19,6 @@ const LOG_LEVEL = process.env.LOG_LEVEL || 'info' // Nivel de logging configurab
 const ENABLE_CORS = process.env.ENABLE_CORS !== 'false'
 const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',') || ['*']
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000'
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3001'
 
 const app = express()
 const httpServer = createServer(app)
@@ -49,18 +48,58 @@ app.use(express.static('dist'))
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
+  console.log('🔍 Health check solicitado')
   res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     players: gameState.players.length,
     projectiles: gameState.projectiles.length,
-    gameActive: gameState.isGameActive
+    gameActive: gameState.isGameActive,
+    port: PORT,
+    host: HOST,
+    nodeEnv: NODE_ENV
+  })
+})
+
+// Debug endpoint
+app.get('/debug', (_req, res) => {
+  console.log('🐛 Debug endpoint solicitado')
+  res.status(200).json({
+    server: 'BytesWar Game Server',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    config: {
+      port: PORT,
+      host: HOST,
+      nodeEnv: NODE_ENV,
+      debug: DEBUG,
+      logLevel: LOG_LEVEL,
+      enableCors: ENABLE_CORS,
+      corsOrigins: CORS_ORIGINS
+    },
+    gameState: {
+      players: gameState.players.length,
+      projectiles: gameState.projectiles.length,
+      gameActive: gameState.isGameActive,
+      connectedPlayers: connectedPlayers.size
+    }
   })
 })
 
 // Ruta principal - servir el cliente
 app.get('/', (_req, res) => {
+  console.log('🏠 Ruta principal solicitada')
   res.sendFile('dist/index.html', { root: '.' })
+})
+
+// Catch-all para rutas no encontradas
+app.get('*', (req, res) => {
+  console.log('❌ Ruta no encontrada:', req.path)
+  res.status(404).json({ 
+    error: 'Not Found', 
+    path: req.path,
+    available: ['/', '/health', '/debug']
+  })
 })
 
 // Estado del juego
@@ -353,6 +392,7 @@ io.on('connection', (socket) => {
 
 // Rutas de la API
 app.get('/api/status', (_req, res) => {
+  console.log('📊 API Status solicitado')
   res.json({
     status: 'running',
     players: gameState.players.length,
@@ -363,6 +403,7 @@ app.get('/api/status', (_req, res) => {
 })
 
 app.get('/api/players', (_req, res) => {
+  console.log('👥 API Players solicitado')
   res.json(gameState.players.map(p => ({
     id: p.id,
     name: p.name,
@@ -371,25 +412,22 @@ app.get('/api/players', (_req, res) => {
   })))
 })
 
-// Health check endpoint
-app.get(process.env.HEALTH_CHECK_ENDPOINT || '/health', (_req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'BytesWar Game Server',
-    version: '1.0.0',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    players: gameState.players.length
-  })
-})
-
 httpServer.listen(PORT, () => {
-  log('info', '🎮 Servidor del juego inicializado')
-  log('info', `🚀 BytesWar servidor de ${NODE_ENV} ejecutándose en ${HOST}:${PORT}`)
-  log('info', `🌐 Cliente disponible en: ${CLIENT_URL}`)
-  log('info', `📊 Health check en: ${SERVER_URL}${process.env.HEALTH_CHECK_ENDPOINT || '/health'}`)
-  log('info', `🔧 API disponible en: ${SERVER_URL}/api`)
-  log('info', `🔒 CORS habilitado: ${ENABLE_CORS}`)
-  log('info', `🐛 Debug mode: ${DEBUG}`)
+  console.log('🎮 ========================================')
+  console.log('🎮 BytesWar Game Server - INICIADO')
+  console.log('🎮 ========================================')
+  console.log(`🚀 Servidor ejecutándose en: ${HOST}:${PORT}`)
+  console.log(`🌍 Entorno: ${NODE_ENV}`)
+  console.log(`🔧 Debug mode: ${DEBUG}`)
+  console.log(`📊 Log level: ${LOG_LEVEL}`)
+  console.log(`🔒 CORS habilitado: ${ENABLE_CORS}`)
+  console.log(`🌐 Cliente URL: ${CLIENT_URL}`)
+  console.log(`📊 Health check: http://${HOST}:${PORT}/health`)
+  console.log(`🐛 Debug endpoint: http://${HOST}:${PORT}/debug`)
+  console.log(`🔧 API endpoints: http://${HOST}:${PORT}/api/*`)
+  console.log('🎮 ========================================')
+  
+  // Activar el juego
+  gameState.isGameActive = true
+  console.log('✅ Juego activado y listo para jugadores')
 }) 

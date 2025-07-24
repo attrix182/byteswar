@@ -45,6 +45,7 @@ ENABLE_CREDENTIALS=false
 
 El contenedor incluye un health check automático que verifica:
 - Endpoint: `http://localhost:3001/health`
+- Comando: `wget --no-verbose --tries=1 --spider http://localhost:3001/health`
 - Intervalo: 30 segundos
 - Timeout: 10 segundos
 - Reintentos: 3
