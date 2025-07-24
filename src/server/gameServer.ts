@@ -6,16 +6,33 @@ import { GameState, Player, GameInput } from '../types/game'
 import { GAME_CONFIG, PLAYER_COLORS } from '../utils/gameConfig'
 import { PhysicsManager } from '../game/PhysicsManager'
 
+// Configuración desde variables de entorno
+const PORT = process.env.PORT || 3001
+const HOST = process.env.HOST || '0.0.0.0'
+const NODE_ENV = process.env.NODE_ENV || 'development'
+const DEBUG = process.env.DEBUG === 'true'
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info'
+const ENABLE_CORS = process.env.ENABLE_CORS !== 'false'
+const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',') || ['*']
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000'
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3001'
+
 const app = express()
 const httpServer = createServer(app)
+
+// Configuración de CORS
+const corsOptions = {
+  origin: ENABLE_CORS ? CORS_ORIGINS : false,
+  credentials: process.env.ENABLE_CREDENTIALS === 'true',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}
+
 const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions
 })
 
-app.use(cors())
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // Estado del juego
@@ -28,6 +45,16 @@ let gameState: GameState = {
 
 const physicsManager = new PhysicsManager()
 const connectedPlayers = new Map<string, { socket: any, player: Player, lastInput: GameInput }>()
+
+// Función para logging
+function log(level: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString()
+  const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`
+  
+  if (level === 'error' || level === 'warn' || DEBUG) {
+    console.log(logMessage, data || '')
+  }
+}
 
 // Función para crear un nuevo jugador
 function createPlayer(id: string, name: string): Player {
@@ -156,7 +183,7 @@ io.on('connection', (socket) => {
     socket.emit('playerJoined', player)
     io.emit('gameState', gameState)
     
-    console.log(`${player.name} se unió al juego`)
+    log('info', `${player.name} se unió al juego`)
   })
 
   // Actualizar input del jugador
@@ -223,7 +250,7 @@ io.on('connection', (socket) => {
 
   // Desconexión
   socket.on('disconnect', () => {
-    console.log(`Jugador desconectado: ${socket.id}`)
+    log('info', `Jugador desconectado: ${socket.id}`)
     
     const playerData = connectedPlayers.get(socket.id)
     if (playerData) {
@@ -245,7 +272,9 @@ app.get('/api/status', (_req, res) => {
   res.json({
     status: 'running',
     players: gameState.players.length,
-    isGameActive: gameState.isGameActive
+    isGameActive: gameState.isGameActive,
+    environment: NODE_ENV,
+    timestamp: new Date().toISOString()
   })
 })
 
@@ -258,9 +287,25 @@ app.get('/api/players', (_req, res) => {
   })))
 })
 
-const PORT = process.env.PORT || 3001
+// Health check endpoint
+app.get(process.env.HEALTH_CHECK_ENDPOINT || '/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'BytesWar Game Server',
+    version: '1.0.0',
+    environment: NODE_ENV,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    players: gameState.players.length
+  })
+})
 
 httpServer.listen(PORT, () => {
-  console.log(`Servidor de BytesWar ejecutándose en puerto ${PORT}`)
-  console.log(`API disponible en http://localhost:${PORT}/api`)
+  log('info', '🎮 Servidor del juego inicializado')
+  log('info', `🚀 BytesWar servidor de ${NODE_ENV} ejecutándose en ${HOST}:${PORT}`)
+  log('info', `🌐 Cliente disponible en: ${CLIENT_URL}`)
+  log('info', `📊 Health check en: ${SERVER_URL}${process.env.HEALTH_CHECK_ENDPOINT || '/health'}`)
+  log('info', `🔧 API disponible en: ${SERVER_URL}/api`)
+  log('info', `🔒 CORS habilitado: ${ENABLE_CORS}`)
+  log('info', `🐛 Debug mode: ${DEBUG}`)
 }) 
