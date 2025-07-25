@@ -9,7 +9,7 @@ interface RobotProps {
   isLocal: boolean
 }
 
-export const Robot: React.FC<RobotProps> = ({ player }) => {
+export const Robot: React.FC<RobotProps> = ({ player, isLocal }) => {
   const [ref, api] = useBox(() => ({
     mass: 1,
     position: player.position,
@@ -36,6 +36,11 @@ export const Robot: React.FC<RobotProps> = ({ player }) => {
       }
     })
   })
+
+  // Ocultar el modelo del jugador local en primera persona
+  if (isLocal) {
+    return null
+  }
 
   return (
     <group ref={ref as any}>

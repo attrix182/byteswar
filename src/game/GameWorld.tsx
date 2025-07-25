@@ -7,6 +7,8 @@ import { ProjectileComponent } from '../components/Projectile'
 import { ShootEffect } from '../components/ShootEffect'
 import { DeathExplosion } from '../components/DeathExplosion'
 import { Arena } from '../components/Arena'
+import { FirstPersonView } from '../components/FirstPersonView'
+import { Crosshair } from '../components/Crosshair'
 import { InputManager } from './InputManager'
 import { PhysicsManager } from './PhysicsManager'
 import { Player, GameState, GameInput } from '../types/game'
@@ -76,19 +78,26 @@ const GameLogic: React.FC<GameWorldProps> = ({
         // Solo procesar input si el jugador no está muerto
         if (!localPlayer.isDead) {
           const input = inputManager.current.getInput()
+          const mouseX = inputManager.current.getMouseX()
           
-          // Debug: verificar si hay input de movimiento
-          if (input.forward || input.backward || input.left || input.right) {
-            console.log('🎮 Input de movimiento detectado:', input)
+          // Combinar input de teclado y mouse
+          const combinedInput = {
+            ...input,
+            mouseX: mouseX
           }
           
-          // Actualizar posición local para movimiento inmediato
-          const deltaTime = 1/60 // 60 FPS
-          const updatedPlayer = physicsManager.current.updatePlayer(localPlayer, input, deltaTime)
+          // Actualizar posición local
+          const deltaTime = 1/60
+          const updatedPlayer = physicsManager.current.updatePlayer(localPlayer, combinedInput, deltaTime)
           onPlayerUpdate(updatedPlayer)
 
-          // Enviar input al servidor (solo una vez)
-          onInputUpdate(input)
+          // Enviar input al servidor
+          onInputUpdate(combinedInput)
+          
+          // Resetear mouse X
+          if (Math.abs(mouseX) > 0) {
+            inputManager.current.resetMouseX()
+          }
 
           // Manejar disparos
           if (input.shoot && Date.now() - lastShootTime.current > shootCooldown) {
@@ -164,6 +173,15 @@ const Scene: React.FC<{
           />
         ))}
 
+        {/* Vista en primera persona para el jugador local */}
+        {gameState.players.map((player) => (
+          <FirstPersonView
+            key={`camera-${player.id}`}
+            player={player}
+            isLocal={player.id === localPlayerId}
+          />
+        ))}
+
         {/* Proyectiles */}
         {gameState.projectiles.map((projectile) => (
           <ProjectileComponent
@@ -192,13 +210,15 @@ const Scene: React.FC<{
         />
       ))}
 
-      {/* Controles de cámara */}
-      <OrbitControls
-        target={[0, 0, 0]}
-        maxPolarAngle={Math.PI / 2}
-        minDistance={10}
-        maxDistance={50}
-      />
+      {/* Controles de cámara (solo para jugadores no locales) */}
+      {!gameState.players.find(p => p.id === localPlayerId) && (
+        <OrbitControls
+          target={[0, 0, 0]}
+          maxPolarAngle={Math.PI / 2}
+          minDistance={10}
+          maxDistance={50}
+        />
+      )}
 
       {/* Estadísticas de rendimiento */}
       <Stats />
@@ -233,8 +253,13 @@ export const GameWorld: React.FC<GameWorldProps> = (props) => {
       {/* Canvas 3D */}
       <Canvas
         shadows
-        camera={{ position: [0, 15, 20], fov: 60 }}
+        camera={{ position: [0, 15, 20], fov: 90 }}
         style={{ background: '#1a1a1a' }}
+        gl={{ 
+          antialias: true,
+          alpha: false,
+          powerPreference: "high-performance"
+        }}
       >
         <Scene 
           gameState={props.gameState} 
@@ -245,6 +270,9 @@ export const GameWorld: React.FC<GameWorldProps> = (props) => {
           onDeathExplosionComplete={handleDeathExplosionComplete}
         />
       </Canvas>
+
+      {/* Mira en el centro */}
+      <Crosshair />
     </>
   )
 } 

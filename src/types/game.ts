@@ -33,6 +33,8 @@ export interface GameInput {
   left: boolean
   right: boolean
   shoot: boolean
+  mouseX?: number
+  mouseY?: number
 }
 
 export interface GameConfig {

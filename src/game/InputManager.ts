@@ -9,6 +9,11 @@ export class InputManager {
     shoot: false
   }
 
+  // Propiedades para rotación del mouse
+  private mouseX: number = 0
+  private mouseY: number = 0
+  private isPointerLocked: boolean = false
+
   private keys: { [key: string]: boolean } = {}
   private isBlocked: boolean = false
 
@@ -24,6 +29,19 @@ export class InputManager {
 
   private setupEventListeners() {
     // Los event listeners se configuran más abajo
+
+    // Manejar movimiento del mouse para rotación
+    const handleMouseMove = (event: MouseEvent) => {
+      if (this.isPointerLocked) {
+        this.mouseX += event.movementX || 0
+        this.mouseY += event.movementY || 0
+      }
+    }
+
+    // Manejar bloqueo del puntero
+    const handlePointerLockChange = () => {
+      this.isPointerLocked = document.pointerLockElement !== null
+    }
 
     const handleMouseDown = (event: MouseEvent) => {
       if (this.isBlocked) return // Bloquear input si está muerto
@@ -72,6 +90,8 @@ export class InputManager {
     document.addEventListener('keyup', handleKeyUpWithShoot)
     document.addEventListener('mousedown', handleMouseDown)
     document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('pointerlockchange', handlePointerLockChange)
 
     // Guardar las referencias para poder remover los event listeners
     this.handleKeyDown = handleKeyDownWithShoot
@@ -116,6 +136,14 @@ export class InputManager {
       }
     }
     return { ...this.input }
+  }
+
+  public getMouseX(): number {
+    return this.mouseX
+  }
+
+  public resetMouseX(): void {
+    this.mouseX = 0
   }
 
   public setBlocked(blocked: boolean): void {

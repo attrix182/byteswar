@@ -12,17 +12,16 @@ export class PhysicsManager {
     let newZ = z
     let newRotY = rotY
 
-    // Rotación simple y directa
-    const rotationSpeed = 2.0 // radianes por segundo
-    if (input.left) {
-      newRotY += rotationSpeed * deltaTime
-    }
-    if (input.right) {
-      newRotY -= rotationSpeed * deltaTime
-    }
+    // Rotación del mouse (horizontal)
+/*     if (input.mouseX !== undefined && Math.abs(input.mouseX) > 0) {
+      const mouseSensitivity = 0.008 // Sensibilidad más suave
+      newRotY -= input.mouseX * mouseSensitivity
+    } */
 
-    // Movimiento simple y directo
+    // Movimiento WASD (A y D rotan al jugador)
     const moveSpeed = this.config.playerSpeed
+    const rotationSpeed = 3.0 // radianes por segundo
+    
     if (input.forward) {
       newX += Math.sin(newRotY) * moveSpeed * deltaTime
       newZ += Math.cos(newRotY) * moveSpeed * deltaTime
@@ -30,6 +29,14 @@ export class PhysicsManager {
     if (input.backward) {
       newX -= Math.sin(newRotY) * moveSpeed * deltaTime
       newZ -= Math.cos(newRotY) * moveSpeed * deltaTime
+    }
+    if (input.left) {
+      // Rotar a la izquierda
+      newRotY += rotationSpeed * deltaTime
+    }
+    if (input.right) {
+      // Rotar a la derecha
+      newRotY -= rotationSpeed * deltaTime
     }
 
     // Limitar posición dentro de la arena
